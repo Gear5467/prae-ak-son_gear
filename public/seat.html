@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>แปรอักษร · ที่นั่ง</title>
+<style>
+  :root { --bg:#0b0b0b; --fg:#fff; --muted:#9ca3af; --accent:#38bdf8; --warn:#f97316; --bad:#dc2626; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font-family: "Noto Sans Thai","Sukhumvit Set","Thonburi",system-ui,-apple-system,sans-serif; overscroll-behavior:none; }
+  .hidden { display:none !important; }
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom)); }
+  .form { justify-content:center; gap:14px; max-width:480px; margin:0 auto; }
+  h1 { font-size:24px; margin:0 0 4px; } p { margin:0; color:var(--muted); line-height:1.5; }
+  label { font-size:15px; color:var(--muted); display:block; margin-bottom:6px; }
+  select, button { width:100%; font:inherit; font-size:22px; padding:14px; border-radius:14px; border:2px solid #374151; background:#111827; color:#fff; }
+  button { background:var(--accent); border-color:var(--accent); color:#04121c; font-weight:700; }
+  button.ghost { background:transparent; color:#fff; border-color:#4b5563; }
+  button:disabled { opacity:.4; }
+  .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .err { color:#fca5a5; min-height:1.4em; }
+  #mini { width:100%; background:#111; border-radius:12px; image-rendering:pixelated; }
+  .seatbig { font-size:44px; font-weight:800; letter-spacing:1px; text-align:center; }
+  .nb { display:flex; justify-content:space-between; gap:8px; font-size:16px; }
+  .nb div { flex:1; background:#111827; border-radius:10px; padding:8px; text-align:center; }
+
+  /* หน้าระหว่างแสดง */
+  #stage { padding:0; transition:background-color .08s linear; }
+  #topbar { display:flex; justify-content:space-between; align-items:center; padding:max(10px,env(safe-area-inset-top)) 14px 6px; font-size:16px; font-weight:600; opacity:.85; }
+  #dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; margin-right:6px; vertical-align:middle; }
+  #center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 12px; }
+  #big { font-size:min(34vw,30vh); font-weight:900; line-height:1; }
+  #big.word { font-size:min(22vw,18vh); }
+  #sub { font-size:min(12vw,9vh); font-weight:800; margin-top:2vh; }
+  #note { font-size:18px; margin-top:1.5vh; opacity:.8; }
+  #strip { height:22vh; display:flex; align-items:center; justify-content:center; font-size:min(10vw,7vh); font-weight:800; }
+  #nextline { text-align:center; padding:8px 0 max(12px,env(safe-area-inset-bottom)); font-size:20px; opacity:.85; }
+  #offline { background:var(--warn); color:#111; padding:10px 14px; font-weight:700; display:flex; gap:10px; align-items:center; }
+  #offline span { flex:1; }
+  #offline button { width:auto; padding:8px 16px; font-size:20px; background:#111; color:#fff; border-color:#111; }
+  #markOv { position:fixed; inset:0; background:var(--bad); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3vh; padding:24px; text-align:center; animation:flash .5s steps(2) 6; }
+  @keyframes flash { 50% { background:#450a0a; } }
+  #markOv .sw { width:60vw; height:22vh; border-radius:18px; border:6px solid #fff; display:flex; align-items:center; justify-content:center; font-size:min(10vw,7vh); font-weight:900; }
+  #markOv h2 { margin:0; font-size:min(9vw,6vh); }
+  #markOv button { background:#fff; color:#111; border-color:#fff; font-size:26px; max-width:420px; }
+  #tapOv { position:fixed; inset:0; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; padding:24px; text-align:center; }
+  #tapOv b { font-size:34px; }
+</style>
+</head>
+<body>
+
+<!-- 1. เลือกที่นั่ง -->
+<section id="pick" class="screen form hidden">
+  <h1>เลือกที่นั่งของคุณ</h1>
+  <p>ดูเลขที่ติดอยู่บนอัฒจันทร์ แล้วเลือกให้ตรง</p>
+  <div class="row3">
+    <div><label for="zSel">โซน</label><select id="zSel"></select></div>
+    <div><label for="rSel">แถว</label><select id="rSel"></select></div>
+    <div><label for="sSel">เลขที่</label><select id="sSel"></select></div>
+  </div>
+  <div class="err" id="pickErr"></div>
+  <button id="pickNext">ถัดไป</button>
+</section>
+
+<!-- 2. ยืนยันที่นั่ง -->
+<section id="confirm" class="screen form hidden">
+  <p style="text-align:center">ที่นั่งของคุณ</p>
+  <div class="seatbig" id="cSeat"></div>
+  <canvas id="mini"></canvas>
+  <p style="text-align:center;font-size:14px">มุมมองจากที่นั่งคุณ · สนามอยู่ด้านหน้า ↑ · <span style="color:#facc15">■</span> คุณ <span style="color:#38bdf8">■</span> คนข้างๆ</p>
+  <div class="nb"><div>ซ้ายมือคุณ<br><b id="cLeft">-</b></div><div>ขวามือคุณ<br><b id="cRight">-</b></div></div>
+  <div class="err" id="cErr"></div>
+  <button id="cYes">ใช่ ที่นั่งนี้</button>
+  <button id="cNo" class="ghost">เปลี่ยนที่นั่ง</button>
+</section>
+
+<!-- 3. ระหว่างแสดง -->
+<section id="stage" class="screen hidden">
+  <div id="offline" class="hidden"><span>ออฟไลน์ – ดูป้ายผู้ควบคุม</span><button id="mPrev">◀</button><b id="mIdx">1</b><button id="mNext">▶</button></div>
+  <div id="topbar"><div><span id="dot"></span><span id="tSeat"></span></div><div id="tImg"></div></div>
+  <div id="center"><div id="big"></div><div id="sub"></div><div id="note"></div></div>
+  <div id="strip" class="hidden"></div>
+  <div id="nextline"></div>
+</section>
+
+<div id="markOv" class="hidden">
+  <h2>ตำแหน่งคุณผิด!</h2>
+  <div style="font-size:20px">ภาพที่ <span id="mkImg"></span> ต้องเป็น</div>
+  <div class="sw" id="mkSw"></div>
+  <button id="mkFixed">แก้แล้ว</button>
+</div>
+
+<div id="tapOv" class="hidden"><b>แตะเพื่อเริ่ม</b><p>เปิดการสั่นและกันจอดับ</p></div>
+
+<script src="/shared.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem('cs_' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('cs_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const qs = new URLSearchParams(location.search);
+if (qs.get('t') && qs.get('t') !== LS.get('token')) { LS.set('token', qs.get('t')); LS.set('seatId', null); LS.set('confirmed', false); }
+const token = qs.get('t') || LS.get('token');
+let deviceId = LS.get('deviceId');
+if (!deviceId) { deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36); LS.set('deviceId', deviceId); }
+
+let seatId = qs.get('seat') || LS.get('seatId');
+let confirmed = !!LS.get('confirmed') && !qs.get('seat');
+let script = LS.get('script');           // { version, names, beatMs, palette, steps[] }
+let live = { status: 'idle', imageIndex: 0, startAt: 0, beatMs: 800, seq: 0 };
+let liveArrivedLate = false, reportedSeq = -1;
+let mark = null;
+let manualIdx = null;                    // ใช้ตอนออฟไลน์
+let pendingJoin = false;                 // กดยืนยันแล้ว รอเซิร์ฟเวอร์ตอบ
+let L = null;
+
+/* ---------- นาฬิกา ---------- */
+const localNow = () => performance.timeOrigin + performance.now();
+let offset = 0, lastRtt = 0, synced = false;
+const serverNow = () => localNow() + offset;
+
+/* ---------- WebSocket ---------- */
+let ws = null, wsOpen = false, retry = 0, offlineSince = 0, kicked = false;
+let samples = [], syncTimer = null;
+
+function connect() {
+  if (kicked) return;
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+  ws.onopen = () => {
+    wsOpen = true; retry = 0; offlineSince = 0; manualIdx = null;
+    if (confirmed || pendingJoin) sendJ({ t: 'join', eventToken: token, seatId, deviceId, takeover: pendingJoin === 'takeover' });
+    syncBurst(10);
+  };
+  ws.onmessage = e => onMsg(JSON.parse(e.data));
+  ws.onclose = () => {
+    wsOpen = false; if (!offlineSince) offlineSince = Date.now();
+    if (!kicked) setTimeout(connect, Math.min(5000, 500 * 2 ** retry++));
+  };
+}
+function sendJ(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+/* ซิงค์แบบ NTP: ส่ง ping หลายครั้ง ใช้รอบที่ RTT ต่ำสุด */
+function syncBurst(n) {
+  samples = [];
+  let i = 0;
+  const tick = () => { if (i++ < n) { sendJ({ t: 'ping', c: localNow() }); setTimeout(tick, 120); } };
+  tick();
+  setTimeout(() => {
+    if (!samples.length) return;
+    const best = samples.reduce((a, b) => (b.rtt < a.rtt ? b : a));
+    offset = best.off; lastRtt = best.rtt; synced = true;
+    sendJ({ t: 'sync', rtt: Math.round(best.rtt), offset: Math.round(best.off) });
+  }, n * 120 + 800);
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => syncBurst(6), 30000);
+}
+
+function onMsg(m) {
+  switch (m.t) {
+    case 'pong': {
+      const t = localNow(), rtt = t - m.c;
+      samples.push({ rtt, off: m.s + rtt / 2 - t });
+      if (!synced) { offset = m.s + rtt / 2 - t; lastRtt = rtt; }
+      break;
+    }
+    case 'joined': pendingJoin = false; seatId = m.seatId; LS.set('seatId', seatId); LS.set('confirmed', true); confirmed = true; enterStage(); break;
+    case 'joinError':
+      if (pendingJoin) { pendingJoin = false; $('cErr').textContent = m.error; }
+      else { confirmed = false; LS.set('confirmed', false); goPick(m.error); }
+      break;
+    case 'joinConflict':
+      pendingJoin = false; confirmed = false; LS.set('confirmed', false);
+      $('cErr').innerHTML = 'ที่นั่งนี้มีเครื่องอื่นใช้อยู่แล้ว ตรวจเลขที่นั่งอีกครั้ง หรือแจ้งหัวหน้าโซน';
+      $('cYes').textContent = 'ใช่ ที่นั่งนี้ของฉันจริง (แทนที่เครื่องเดิม)';
+      $('cYes').dataset.takeover = '1';
+      goConfirm(true);
+      break;
+    case 'kicked': kicked = true; confirmed = false; LS.set('confirmed', false); goPick('มีเครื่องอื่นยืนยันที่นั่งนี้แทนแล้ว'); break;
+    case 'script': script = m; LS.set('script', m); break;
+    case 'version': if (script) { Object.assign(script, { version: m.version, names: m.names, beatMs: m.beatMs }); LS.set('script', script); } break;
+    case 'live':
+      if (m.live.seq !== live.seq) reportedSeq = -1;
+      live = m.live;
+      liveArrivedLate = live.status === 'counting' && serverNow() > live.startAt;
+      break;
+    case 'mark':
+      mark = m; showMark(); vib([300, 100, 300, 100, 500]);
+      sendJ({ t: 'markAck', markId: m.markId, status: 'seen' });
+      break;
+  }
+}
+
+/* ---------- เลือก / ยืนยันที่นั่ง ---------- */
+async function loadMap() {
+  if (L) return true;
+  try {
+    const r = await fetch('/api/seatmap?t=' + encodeURIComponent(token || ''));
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    L = Stunt.layout(j.stand); return true;
+  } catch (e) { $('pickErr').textContent = e.message || 'โหลดผังไม่ได้ ลองใหม่'; return false; }
+}
+function opts(sel, arr) { sel.innerHTML = arr.map(v => `<option value="${v}">${v}</option>`).join(''); }
+async function goPick(err) {
+  ['confirm', 'stage'].forEach(s => show(s, false)); show('pick');
+  $('pickErr').textContent = err || '';
+  if (!token) { $('pickErr').textContent = 'กรุณาสแกน QR ของงานก่อน'; return; }
+  if (!(await loadMap())) return;
+  const zones = [...new Set(L.seats.map(s => s.zone))];
+  opts($('zSel'), zones);
+  const cur = seatId && L.byId.get(seatId);
+  if (cur) $('zSel').value = cur.zone;
+  fillRows(cur); }
+function fillRows(cur) {
+  const z = $('zSel').value;
+  opts($('rSel'), [...new Set(L.seats.filter(s => s.zone === z).map(s => s.row))]);
+  if (cur && cur.zone === z) $('rSel').value = cur.row;
+  fillSeats(cur);
+}
+function fillSeats(cur) {
+  const z = $('zSel').value, r = +$('rSel').value;
+  opts($('sSel'), L.seats.filter(s => s.zone === z && s.row === r && s.active).map(s => s.seat));
+  if (cur && cur.zone === z && cur.row === r) $('sSel').value = cur.seat;
+}
+$('zSel').onchange = () => fillRows(); $('rSel').onchange = () => fillSeats();
+$('pickNext').onclick = () => {
+  seatId = Stunt.seatId($('zSel').value, +$('rSel').value, +$('sSel').value);
+  $('cErr').textContent = ''; delete $('cYes').dataset.takeover; $('cYes').textContent = 'ใช่ ที่นั่งนี้';
+  goConfirm();
+};
+async function goConfirm(keepMsg) {
+  ['pick', 'stage'].forEach(s => show(s, false)); show('confirm');
+  if (!(await loadMap())) return goPick();
+  const me = L.byId.get(seatId);
+  if (!me || !me.active) return goPick('ไม่พบที่นั่ง ' + seatId);
+  $('cSeat').textContent = me.id;
+  // ซ้ายมือของนักเรียน (หันหน้าลงสนาม) = ขวาของผู้ชม = x+1
+  const at = (x) => { const s = L.cellAt[me.y] && L.cellAt[me.y][x]; return s && s.active ? s : null; };
+  const left = at(me.x + 1), right = at(me.x - 1);
+  $('cLeft').textContent = left ? left.id : 'ไม่มี (ขอบ)';
+  $('cRight').textContent = right ? right.id : 'ไม่มี (ขอบ)';
+  drawMini(me, left, right);
+}
+function drawMini(me, a, b) {
+  // ขยายเฉพาะรอบที่นั่งตัวเอง หมุน 180° = มุมมองจากที่นั่ง หันหน้าลงสนาม
+  const cv = $('mini'), WX = 13, WY = 7;
+  const x0 = Math.max(0, Math.min(L.width - WX, me.x - (WX >> 1))), y0 = Math.max(0, Math.min(L.height - WY, me.y - (WY >> 1)));
+  const w = Math.min(WX, L.width), hh = Math.min(WY, L.height);
+  const cs = Math.floor(cv.clientWidth * devicePixelRatio / w);
+  cv.width = w * cs; cv.height = hh * cs; cv.style.height = 'auto';
+  const g = cv.getContext('2d');
+  g.fillStyle = '#111'; g.fillRect(0, 0, cv.width, cv.height);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${Math.floor(cs * 0.32)}px sans-serif`;
+  for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++) {
+    const s = L.cellAt[y][x]; if (!s) continue;
+    const px = (x0 + w - 1 - x) * cs, py = (y0 + hh - 1 - y) * cs;
+    g.fillStyle = s === me ? '#facc15' : (s === a || s === b) ? '#38bdf8' : s.active ? '#374151' : '#1f2937';
+    g.fillRect(px + 2, py + 2, cs - 4, cs - 4);
+    if (s === me || s === a || s === b) { g.fillStyle = '#111'; g.fillText(String(s.seat), px + cs / 2, py + cs / 2); }
+  }
+}
+$('cNo').onclick = () => goPick();
+$('cYes').onclick = () => {
+  unlock();
+  kicked = false; $('cErr').textContent = '';
+  pendingJoin = $('cYes').dataset.takeover ? 'takeover' : true;
+  if (!ws || ws.readyState > 1) connect();
+  else if (wsOpen) sendJ({ t: 'join', eventToken: token, seatId, deviceId, takeover: pendingJoin === 'takeover' });
+};
+
+/* ---------- สั่น / กันจอดับ ---------- */
+let wakeLock = null, unlocked = false;
+async function unlock() {
+  unlocked = true; show('tapOv', false);
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && unlocked) unlock(); });
+function vib(p) { try { if (unlocked && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+$('tapOv').onclick = unlock;
+
+/* ---------- แจ้งจุดผิด ---------- */
+function colorOf(id) { return script && script.palette && script.palette.find(c => c.id === id); }
+function showMark() {
+  const c = colorOf(mark.expectedColor) || { name: mark.expectedColor, hex: '#888', cardFace: '?' };
+  $('mkImg').textContent = mark.imageIndex + 1;
+  $('mkSw').style.background = c.hex; $('mkSw').style.color = Stunt.textOn(c.hex);
+  $('mkSw').textContent = `${c.name} · หน้า ${c.cardFace}`;
+  show('markOv');
+  // เริ่ม animation ใหม่
+  const o = $('markOv'); o.style.animation = 'none'; void o.offsetWidth; o.style.animation = '';
+}
+$('mkFixed').onclick = () => { if (mark) sendJ({ t: 'markAck', markId: mark.markId, status: 'fixed' }); mark = null; show('markOv', false); };
+
+/* ---------- หน้าระหว่างแสดง ---------- */
+function enterStage() {
+  ['pick', 'confirm'].forEach(s => show(s, false)); show('stage');
+  $('tSeat').textContent = seatId;
+  if (!unlocked) show('tapOv');
+}
+
+$('mPrev').onclick = () => { const n = nImg(); if (n) manualIdx = ((manualIdx ?? live.imageIndex) - 1 + n) % n; };
+$('mNext').onclick = () => { const n = nImg(); if (n) manualIdx = ((manualIdx ?? live.imageIndex) + 1) % n; };
+const nImg = () => (script && script.steps ? script.steps.length : 0);
+
+function colorView(idx, extra) {
+  const n = nImg(), c = colorOf(script.steps[idx]) || { name: '-', hex: '#333', cardFace: '-' };
+  const nx = idx + 1 < n ? colorOf(script.steps[idx + 1]) : null;
+  return Object.assign({
+    key: 'c' + idx + (extra && extra.tag || ''), bg: c.hex, fg: Stunt.textOn(c.hex),
+    big: c.name, word: true, sub: 'หน้า ' + c.cardFace,
+    img: `ภาพที่ ${idx + 1} / ${n}`, next: nx ? `ถัดไป: ${nx.name} · หน้า ${nx.cardFace}` : 'ภาพสุดท้าย'
+  }, extra || {});
+}
+
+function computeView() {
+  const n = nImg();
+  if (!n) return { key: 'noscript', bg: '#0b0b0b', fg: '#fff', big: 'รอบท', word: true, sub: '', note: 'ผู้ควบคุมยังไม่เผยแพร่ชุดภาพ' };
+  const offline = !wsOpen && offlineSince && Date.now() - offlineSince > 2000;
+  if (offline && manualIdx != null) return colorView(manualIdx, { tag: 'm', note: 'เลือกภาพเองตามป้ายผู้ควบคุม' });
+  const idx = Math.min(live.imageIndex, n - 1), t = serverNow();
+  switch (live.status) {
+    case 'stopped': return { key: 'stop', bg: '#7f1d1d', fg: '#fff', big: 'หยุด', word: true, sub: 'รอคำสั่งผู้ควบคุม', next: '' };
+    case 'prepared': return colorView(idx, { note: 'เตรียมแผ่น' });
+    case 'counting': {
+      const beat = live.beatMs || 800, ph = Math.floor((t - live.startAt) / beat);
+      if (ph < 0) return colorView(idx, { tag: 'w', note: 'เตรียมนับ…' });
+      if (ph < 3) {
+        const c = colorOf(script.steps[idx]) || { name: '-', hex: '#333', cardFace: '-' };
+        return { key: 'n' + live.seq + '_' + ph, beat: ph, bg: '#0b0b0b', fg: '#fff', big: String(ph + 1), sub: '', strip: c, img: `ภาพที่ ${idx + 1} / ${n}`, next: '' };
+      }
+      return colorView(idx, { tag: 'up' + live.seq, beat: 3, big: 'ชู!', word: true, note: '', strip: null,
+        sub: (colorOf(script.steps[idx]) || {}).name + ' · หน้า ' + (colorOf(script.steps[idx]) || {}).cardFace });
+    }
+    case 'down':
+      if (t < live.startAt) return { key: 'dw' + live.seq, bg: '#1f2937', fg: '#fff', big: 'เตรียมลด', word: true, sub: '', next: '' };
+      return { key: 'dn' + live.seq, beat: 3, bg: '#0b0b0b', fg: '#fff', big: 'ลดแผ่น', word: true, sub: '', next: '' };
+    default: return { key: 'idle', bg: '#0b0b0b', fg: '#6b7280', big: seatId || '', word: true, sub: 'รอคำสั่ง', next: '', dim: true };
+  }
+}
+
+let curKey = '';
+function frame() {
+  if (!$('stage').classList.contains('hidden')) {
+    const v = computeView();
+    if (v.key !== curKey) {
+      curKey = v.key;
+      const st = $('stage');
+      st.style.background = v.bg; st.style.color = v.fg;
+      $('big').textContent = v.big || ''; $('big').className = v.word ? 'word' : '';
+      $('sub').textContent = v.sub || ''; $('note').textContent = v.note || '';
+      $('tImg').textContent = v.img || '';
+      $('nextline').textContent = v.next || '';
+      if (v.strip) { $('strip').style.background = v.strip.hex; $('strip').style.color = Stunt.textOn(v.strip.hex); $('strip').textContent = `${v.strip.name} · หน้า ${v.strip.cardFace}`; }
+      show('strip', !!v.strip);
+      st.style.opacity = v.dim ? '.75' : '1';
+      // สั่นเฉพาะตอนเปลี่ยนจังหวะตรงเวลา (ไม่สั่นย้อนหลังเมื่อได้รับช้า)
+      if (v.beat != null) {
+        const beat = live.beatMs || 800, due = live.startAt + v.beat * beat;
+        if (Math.abs(serverNow() - due) < 150) vib(v.beat === 3 ? 250 : 70);
+      }
+      // รายงานความคลาดของการขึ้นเลข 1 ให้ผู้ควบคุมดู
+      if (live.status === 'counting' && reportedSeq !== live.seq && v.key.startsWith('n')) {
+        reportedSeq = live.seq;
+        sendJ({ t: 'beatReport', seq: live.seq, lateMs: Math.round(serverNow() - live.startAt), rtt: Math.round(lastRtt), arrivedLate: liveArrivedLate });
+      }
+    }
+    const offline = !wsOpen && offlineSince && Date.now() - offlineSince > 2000;
+    show('offline', !!offline && nImg() > 0);
+    $('mIdx').textContent = (manualIdx ?? live.imageIndex) + 1;
+    $('dot').style.background = wsOpen ? '#22c55e' : '#f97316';
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- เริ่ม ---------- */
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/sw.js').catch(() => {});
+connect();
+if (confirmed && seatId) enterStage();
+else if (seatId) goConfirm();
+else goPick();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #14171f; --muted: #5d6573; --line: #dde1e7;
+  --accent: #0e7490; --accent-ink: #fff; --good: #15803d; --warn: #c2410c; --bad: #b91c1c; --sel: #06b6d4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, -apple-system, sans-serif; font-size: 15px; }
+.hidden { display: none !important; }
+h1 { font-size: 22px; margin: 0 0 6px; } h2 { font-size: 18px; margin: 0 0 10px; } h3 { font-size: 15px; margin: 0 0 8px; }
+.muted { color: var(--muted); } .err { color: var(--bad); min-height: 1.2em; }
+.small { font-size: 13px; }
+input, select, textarea, button { font: inherit; }
+input, select, textarea { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+input[type=color] { padding: 0; width: 40px; height: 32px; }
+input[type=number] { width: 90px; }
+button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+button:hover { border-color: #b8bec8; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+button:disabled { opacity: .45; cursor: default; }
+
+header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  background: var(--ink); color: #fff; flex-wrap: wrap; }
+.brand { font-weight: 800; font-size: 18px; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+nav button { background: transparent; color: #cbd2dc; border-color: transparent; }
+nav button.active { background: #fff; color: var(--ink); }
+.pill { font-size: 13px; padding: 4px 10px; border-radius: 99px; background: #374151; }
+.pill.ok { background: var(--good); } .pill.bad { background: var(--bad); }
+
+main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.loginCard { max-width: 380px; margin: 12vh auto; display: flex; flex-direction: column; gap: 10px; }
+canvas.grid { display: block; image-rendering: pixelated; border-radius: 6px; touch-action: none; max-width: 100%; }
+.scroll { overflow: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-weight: 600; color: var(--muted); font-size: 13px; }
+
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
+  padding: 10px 18px; border-radius: 10px; z-index: 50; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+
+/* คลังภาพ */
+.lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.libItem { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+.libItem canvas { width: 100%; height: auto; }
+
+/* ตัววาด */
+.tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sw { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 8px; border: 2px solid var(--line); cursor: pointer; background: #fff; }
+.sw i { width: 22px; height: 22px; border-radius: 5px; display: inline-block; border: 1px solid rgba(0,0,0,.2); }
+.sw.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; }
+
+/* ชุดการแสดง */
+.showItem { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: #fff; }
+.showItem.drag { opacity: .4; } .showItem.over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.showItem .idx { font-weight: 800; width: 30px; text-align: center; font-size: 18px; }
+.showItem canvas { width: 170px; height: auto; flex: none; }
+.showItem .grow { flex: 1; min-width: 140px; }
+.handle { cursor: grab; color: var(--muted); font-size: 20px; padding: 0 4px; }
+.qr { width: 180px; height: 180px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.qr svg { width: 100%; height: 100%; }
+code.url { word-break: break-all; background: #eef1f4; padding: 4px 6px; border-radius: 6px; }
+
+/* ควบคุมสด */
+.liveWrap { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1000px) { .liveWrap { grid-template-columns: minmax(0, 1fr); } }
+.bigBtns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bigBtns button { font-size: 20px; padding: 22px 10px; border-radius: 14px; font-weight: 700; position: relative; overflow: hidden; }
+.bigBtns .wide { grid-column: span 2; }
+.bigBtns .go { background: var(--good); color: #fff; border-color: var(--good); font-size: 26px; padding: 30px 10px; }
+.bigBtns .prep { background: var(--accent); color: #fff; border-color: var(--accent); }
+.bigBtns .stop { background: var(--bad); color: #fff; border-color: var(--bad); }
+.hold .fillbar { position: absolute; left: 0; bottom: 0; height: 6px; width: 0; background: rgba(255,255,255,.85); }
+.hold.holding .fillbar { width: 100%; transition: width .8s linear; }
+.hold:not(.stop) .fillbar { background: var(--ink); }
+.status { font-size: 22px; font-weight: 800; }
+.beatNow { font-size: 64px; font-weight: 900; text-align: center; min-height: 80px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: #f7f8fa; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.stat b { display: block; font-size: 22px; }
+.stat.good b { color: var(--good); } .stat.bad b { color: var(--bad); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แปรอักษร · ผู้ควบคุม</title>
+<link rel="stylesheet" href="/director.css">
+</head>
+<body>
+<section id="login" class="hidden">
+  <form id="loginForm" class="card loginCard">
+    <h1>ผู้ควบคุมแปรอักษร</h1>
+    <p class="muted">ใส่รหัสผ่าน Director (ดูได้จากหน้าต่างที่รันเซิร์ฟเวอร์)</p>
+    <input id="pw" type="password" placeholder="รหัสผ่าน" autocomplete="current-password">
+    <div id="loginErr" class="err"></div>
+    <button class="primary">เข้าสู่ระบบ</button>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">แปรอักษร</div>
+    <nav id="tabs">
+      <button data-tab="setup">1 · ตั้งค่าสแตนด์</button>
+      <button data-tab="library">2 · คลังภาพ</button>
+      <button data-tab="editor">3 · วาดภาพ</button>
+      <button data-tab="show">4 · ชุดการแสดง</button>
+      <button data-tab="live">5 · ควบคุมสด</button>
+      <button data-tab="spot">ตรวจภาพ</button>
+    </nav>
+    <div id="conn" class="pill">กำลังเชื่อมต่อ…</div>
+  </header>
+  <main id="main"></main>
+</div>
+<div id="toast" class="hidden"></div>
+<script src="/shared.js"></script>
+<script src="/director.js"></script>
+</body>
+</html>
